@@ -27,7 +27,7 @@ mode = StringVar()
 Result = StringVar()
 
 
-#######define function#####
+#########define function#####
 
 #function to encode
 
