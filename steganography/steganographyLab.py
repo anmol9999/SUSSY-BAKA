@@ -1,0 +1,161 @@
+# -*- encoding: utf-8 -*-
+
+import os, sys
+from tkinter import*
+from tkinter import messagebox
+import tkinter.filedialog
+import tkinter.colorchooser
+import math
+from copy import copy
+from PIL import Image, ImageTk,ImageFilter,ImageOps
+import binascii
+
+class userInterfaze:
+    window_size= "800x600"      
+    size = 256, 256             
+    color = "grey"
+    filters = {'Bit based significance'}      
+    acImage = ''
+    outImage = ''
+    file = 0
+    def __init__(self, master):
+        global actlmage
+        global outImage
+        self.master = master
+        master.title("steganographyLab")
+
+        
+        tkvar = StringVar(root)
+        tkvar.set('Bit based significance')
+        master.geometry(self.window_size)
+        master. resizable(width=False, height=False)
+        self.window = tkinter.Frame(master)
+        self.window.pack()
+        
+        inImage = Image.open("steganography\Images\intro.jpg")                      
+        actlmage = copy(inImage)
+        outImage = copy(inImage)
+        inImage.thumbnail(self.size, Image.ANTIALIAS)		
+        self.tkimage = ImageTk.PhotoImage(inImage)			
+        self.inMiniaturePanel = tkinter.Label(self.window, image=self.tkimage,width=256,height=256)
+        self.inMiniaturePanel.grid(row=0)
+
+        outputimage = Image.open("steganography\Images\result.jpg")			
+        outputimage.thumbnail(self.size, Image.ANTIALIAS)		
+        self.tkimageout = ImageTk.PhotoImage(outputimage)
+        self.outMiniaturePanel = tkinter.Label(self.window, image=self.tkimageout,width=256,height=256)
+        self.outMiniaturePanel.grid(row=0,column=2)
+
+        chooseButton = tkinter.Button(self.window,text="Select Image",command=self.chooseImage).grid(row=1,column=0,pady=8)      #Botón de carga de imágenes
+        saveButton = tkinter.Button(self.window,text="save Image",command=self.saveImage).grid(row=1,column=2)                     #Botón para guardar imágenes
+
+        Label(self.window,text="Steganography: ").grid(row=2,column=0)
+        filterMenu = OptionMenu(self.window,tkvar,*self.filters).grid(row=2,column=1)                                                 #ComboBox
+        filerButton = tkinter.Button(self.window,text="Apply",command=self.aplySteganography).grid(row=2,column=2,pady= 20)         #Botón que aplica el filtro seleccionado por el ComboBox
+
+        chooseTextButton = tkinter.Button(self.window,text="image to text",command=self.chooseText).grid(row=3,column=0)
+        self.filepatch= Entry(self.window,width=30)
+        self.filepatch.grid(row=3,column=1,pady=30)
+        
+        textIn = Text(height=5)
+        textIn.insert(END,"Introduction to the steganography...")
+        textIn.pack()
+        
+    def chooseImage(self):
+        global actlmage
+        filename =tkinter.filedialog.askopenfilename()
+        if filename:
+            try:
+                inImage2 = Image.open(filename)				
+                actlmage = copy(inImage2)
+                self.refreshImages(inImage2,self.inMiniaturePanel)
+            except:
+                tkinter.messagebox.showerror("Error","Falied to archive.")
+                
+    #Método encargado de guardar la imagen procesada.
+    def saveImage(self):
+        global outImage
+        savefile = tkinter.filedialog.asksaveasfile(mode='w',defaultextension=".jpg")
+        if savefile:    
+            try:
+                outImage.save(savefile)
+            except:
+                messagebox.showerror("Error","Falied to archive")
+
+
+    #Método encargado de aplicar los filtros.
+    def aplySteganography(self):
+        global actlmage
+        global outImage
+        auxiliarImg = copy(actlmage)
+       #NOW HERE STEGANOGRAPHY METHOD
+        
+        showIm = self.lessBit(auxiliarImg,self.file)
+        outImage=copy(showIm)
+        self.refreshImages(showIm,self.outMiniaturePanel)
+
+    #Método que refresca miniaturas.   
+    def refreshImages(self,newMiniatureImage,panel):
+        newMiniatureImage.thumbnail(self.size, Image.ANTIALIAS)
+        tkimageout = ImageTk.PhotoImage(newMiniatureImage)	
+        panel.image = tkimageout
+
+    def chooseText(self):
+        filename =tkinter.filedialog.askopenfilename()
+        if filename:
+            try:
+                self.filepatch.insert(10,filename)
+                self.file = open(filename,'r')
+            except:
+                messagebox.showerror("Error","Fallo al abrir el archivo")
+
+    def lessBit(self,image,fText):
+        width,height = image.size
+        maxLetters = width*height*3         
+        message = fText.read()          
+        binMessage = bin(int.from_bytes(message.encode(),'big'))    
+        if maxLetters < len(binMessage):
+            return 0
+        charNum = 0
+        for i in range(width):
+            for j in range(height):
+                r,g,b = image.getpixel((i,j))
+                print("Viejo")
+                print(r)
+                print(g)
+                print(b)
+                if (r % 2 == 1) and (binMessage[charNum]=='0'):
+                    r=r-1
+                elif (r % 2 == 0) and (binMessage[charNum]=='1'):
+                    r=r+1
+                    
+                charNum=charNum+1
+                if charNum>=len(binMessage):
+                   return image
+                if (g % 2 == 1) and (binMessage[charNum]=='0'):
+                    g=g-1
+                elif (g % 2 == 0) and (binMessage[charNum]=='1'):
+                    g=g+1
+
+                charNum=charNum+1
+                if charNum>=len(binMessage):
+                   return image
+                if (b % 2 == 1) and (binMessage[charNum]=='0'):
+                    b=b-1
+                elif (b % 2 == 0) and (binMessage[charNum]=='1'):
+                    b=b+1
+
+                charNum=charNum+1
+                if charNum>=len(binMessage):
+                   return image
+                print("Nuevo")
+                print(r)
+                print(g)
+                print(b)
+                image.putpixel((i,j),(r,g,b))       
+			
+        return image
+        
+root = tkinter.Tk()            
+ui = userInterfaze(root)
+root.mainloop()
